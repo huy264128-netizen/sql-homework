@@ -6,3 +6,17 @@
 
 图书管理系统 
 
+### Table 1 (Book)
+
+|Book id | Book Name | Total Count | Current Count|
+|---|---|---|---|
+
+### Table 2 (User)
+
+|User id | User Name | Current Borrow |
+|---|---|---|
+
+### Table3 (Borrow) 
+
+|Borrow id|User id| Book id|
+|---|---|---|
