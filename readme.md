@@ -8,15 +8,17 @@
 
 ### Table 1 (Book)
 
-|Book id | Book Name | Total Count | Current Count|
-|---|---|---|---|
+|Book id | Book Name | Status|
+|---|---|---|
+|INT PRIMARY KEY|TEXT UNIQUE |'returned' or 'borrorwed'|
 
 ### Table 2 (User)
 
 |User id | User Name | Current Borrow |
 |---|---|---|
-
+|INT PRIMARY KEY| TEXT | [0,5]|
 ### Table3 (Borrow) 
 
 |Borrow id|User id| Book id|
 |---|---|---|
+|INT PRIMARY KEY| FOREIGN KEY|FOREIGN KEY|

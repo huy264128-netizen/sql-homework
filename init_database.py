@@ -9,12 +9,11 @@ def initial():
                            CREATE TABLE BOOK(
                            bookid INT PRIMARY KEY,
                            bookname TEXT UNIQUE,
-                           totalcount INT NOT NULL,
-                           currentcount INT NOT NULL )""")
+                           status IN ('borrowed','returned') )""")
             cursor.execute("""CREATE TABLE USER(
                            userid INT PRIMARY KEY,
                            username TEXT UNIQUE,
-                           currentborrow INT NOT NULL)""")
+                           currentborrow INT CHECK(currentborrow>=0 AND currentborrow<=5))""")
             cursor.execute("""CREATE TABLE BORROW(
                            borrowid INT PRIMARY KEY,
                            userid INT,
