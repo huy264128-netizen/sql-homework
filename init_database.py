@@ -4,18 +4,29 @@ dbPath=Path("./example.db")
 def initial():
     if not dbPath.exists():
         exampleDB.execSQL("""
-                           CREATE TABLE BOOK(
-                           bookid INT PRIMARY KEY,
-                           bookname TEXT UNIQUE,
-                           status TEXT CHECK(STATUS IN('borrowed','returned') ) )""")
-        exampleDB.execSQL("""CREATE TABLE USER(
-                           userid INT PRIMARY KEY,
-                           username TEXT UNIQUE,
-                           currentborrow INT CHECK(currentborrow>=0 AND currentborrow<=5))""")
-        exampleDB.execSQL("""CREATE TABLE BORROW(
-                           borrowid INT PRIMARY KEY,
-                           userid INT,
-                           bookid INT)""")
-if __name__=='__main__':
+            CREATE TABLE BOOK(
+                bookid INT PRIMARY KEY,
+                bookname TEXT UNIQUE,
+                status TEXT CHECK(status IN ('borrowed', 'returned')) DEFAULT 'returned'
+            )""")
+        
+        exampleDB.execSQL("""
+            CREATE TABLE USER(
+                userid INT PRIMARY KEY,
+                username TEXT UNIQUE,
+                currentborrow INT DEFAULT 0 CHECK(currentborrow >= 0 AND currentborrow <= 5)
+            )""")
+        
+        exampleDB.execSQL("""
+            CREATE TABLE BORROW(
+                borrowid INT PRIMARY KEY,
+                userid INT,
+                bookid INT,
+                FOREIGN KEY(userid) REFERENCES USER(userid),
+                FOREIGN KEY(bookid) REFERENCES BOOK(bookid)
+            )""")
+        print("数据库初始化成功。")
+
+if __name__ == '__main__':
     initial()
         

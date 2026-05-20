@@ -15,7 +15,7 @@
 |用户id | 用户的名字|用户现在借了几本书|
 ### Table3 (BORROW) 
 
-|borrowid|userid|userid|
+|borrowid|userid|bookid|
 |---|---|---|
 |INT PRIMARY KEY| FOREIGN KEY|FOREIGN KEY|
 |借贷记录id（主键）|用户id|书籍id|
