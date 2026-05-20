@@ -7,7 +7,7 @@ def initial():
                            CREATE TABLE BOOK(
                            bookid INT PRIMARY KEY,
                            bookname TEXT UNIQUE,
-                           status IN ('borrowed','returned') )""")
+                           status TEXT CHECK(STATUS IN('borrowed','returned') ) )""")
         exampleDB.execSQL("""CREATE TABLE USER(
                            userid INT PRIMARY KEY,
                            username TEXT UNIQUE,
