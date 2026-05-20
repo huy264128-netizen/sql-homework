@@ -1,20 +1,18 @@
-import sqlite3
+from accessDB import exampleDB
 from pathlib import Path
 dbPath=Path("./example.db")
 def initial():
     if not dbPath.exists():
-        with sqlite3.connect(dbPath) as db:
-            cursor=db.cursor()
-            cursor.execute("""
+        exampleDB.execSQL("""
                            CREATE TABLE BOOK(
                            bookid INT PRIMARY KEY,
                            bookname TEXT UNIQUE,
                            status IN ('borrowed','returned') )""")
-            cursor.execute("""CREATE TABLE USER(
+        exampleDB.execSQL("""CREATE TABLE USER(
                            userid INT PRIMARY KEY,
                            username TEXT UNIQUE,
                            currentborrow INT CHECK(currentborrow>=0 AND currentborrow<=5))""")
-            cursor.execute("""CREATE TABLE BORROW(
+        exampleDB.execSQL("""CREATE TABLE BORROW(
                            borrowid INT PRIMARY KEY,
                            userid INT,
                            bookid INT)""")
