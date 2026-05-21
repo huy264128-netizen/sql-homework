@@ -6,22 +6,22 @@ def initial():
         exampleDB.execSQL("""
             CREATE TABLE BOOK(
                 bookid INT PRIMARY KEY,
-                bookname TEXT UNIQUE,
+                bookname TEXT UNIQUE NOT NULL,
                 status TEXT CHECK(status IN ('borrowed', 'returned')) DEFAULT 'returned'
             )""")
         
         exampleDB.execSQL("""
             CREATE TABLE USER(
                 userid INT PRIMARY KEY,
-                username TEXT UNIQUE,
+                username TEXT UNIQUE NOT NULL,
                 currentborrow INT DEFAULT 0 CHECK(currentborrow >= 0 AND currentborrow <= 5)
             )""")
         
         exampleDB.execSQL("""
-            CREATE TABLEBN BORROW(
+            CREATE TABLE BORROW(
                 borrowid INT PRIMARY KEY,
-                userid INT,
-                bookid INT,
+                userid INT NOT NULL,
+                bookid INT NOT NULL,
                 FOREIGN KEY(userid) REFERENCES USER(userid),
                 FOREIGN KEY(bookid) REFERENCES BOOK(bookid)
             )""")
