@@ -18,7 +18,7 @@ def initial():
             )""")
         
         exampleDB.execSQL("""
-            CREATE TABLE BORROW(
+            CREATE TABLEBN BORROW(
                 borrowid INT PRIMARY KEY,
                 userid INT,
                 bookid INT,
