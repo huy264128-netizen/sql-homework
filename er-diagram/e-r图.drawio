@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="图书管理系统E-R图" id="YxTzmYVaSgREcdwgnzZe">
-    <mxGraphModel dx="1425" dy="1048" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1089" dy="801" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -168,6 +168,24 @@
             <mxPoint x="676" y="310" as="sourcePoint" />
             <mxPoint x="520" y="299" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-127" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="150" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-130" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="n" vertex="1">
+          <mxGeometry height="30" width="60" x="359" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-134" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="600" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-136" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="n" vertex="1">
+          <mxGeometry height="30" width="60" x="470" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-137" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="n" vertex="1">
+          <mxGeometry height="30" width="60" x="245" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="OmAVAUuM2jc5Fdq4ywxo-138" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="m" vertex="1">
+          <mxGeometry height="30" width="60" x="540" y="250" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
