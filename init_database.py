@@ -44,6 +44,17 @@ def initial():
             END;
         """)
 
+        # 触发器：删除借阅记录时自动恢复 BOOK 状态和 USER 借阅数
+        exampleDB.execSQL("""
+            CREATE TRIGGER trg_borrow_delete
+            AFTER DELETE ON BORROW
+            FOR EACH ROW
+            BEGIN
+                UPDATE BOOK SET status = 'returned' WHERE bookid = OLD.bookid;
+                UPDATE USER SET currentborrow = currentborrow - 1 WHERE userid = OLD.userid;
+            END;
+        """)
+
         #数据插入
         # 插入10个用户
         exampleDB.execSQL("""

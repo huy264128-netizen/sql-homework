@@ -102,50 +102,43 @@ def cmd_schema(args: str) -> str:
 
 @register_command("borrow", help_text="借书 (.borrow [用户id] [书id])", aliases=["br"])
 def cmd_borrow(args: str) -> str:
-    """借书：插入一条 BORROW 记录，触发器自动更新 BOOK/USER 状态。"""
+    """借书：调用存储过程 borrow_book()，触发器自动更新 BOOK/USER 状态。"""
     parts = args.split()
     if len(parts) < 2:
         return "用法: .borrow [用户id] [书id]\n示例: .borrow 1 109"
 
     userid_str, bookid_str = parts[0], parts[1]
 
-    # 验证输入为整数
     if not userid_str.isdigit() or not bookid_str.isdigit():
         return "错误: 用户id 和 书id 必须是整数"
 
     userid = int(userid_str)
     bookid = int(bookid_str)
 
-    # 1. 获取用户信息（用于友好提示）
-    user_check = exampleDB.execSQL(
-        f"SELECT username FROM USER WHERE userid = {userid}"
-    )
-    if not user_check:
-        return f"错误: 用户 {userid} 不存在"
-    username = user_check[0][0]
-
-    # 2. 获取书籍信息
-    book_check = exampleDB.execSQL(
-        f"SELECT bookname FROM BOOK WHERE bookid = {bookid}"
-    )
-    if not book_check:
-        return f"错误: 书籍 {bookid} 不存在"
-    bookname = book_check[0][0]
-
-    # 3. 生成新的 borrowid
-    max_id = exampleDB.execSQL("SELECT COALESCE(MAX(borrowid), 0) FROM BORROW")
-    if not max_id:
-        return "错误: 无法查询借阅记录"
-    new_borrowid = max_id[0][0] + 1
-
-    # 4. 执行 INSERT（触发器 trg_borrow_insert 自动校验并更新 BOOK/USER）
     try:
-        exampleDB.execSQL(
-            f"INSERT INTO BORROW (borrowid, userid, bookid) VALUES ({new_borrowid}, {userid}, {bookid})"
-        )
-        return f"借书成功! 用户 '{username}' 借阅了 '{bookname}'（借阅记录ID: {new_borrowid}）"
+        bid, username, bookname = exampleDB.borrow_book(userid, bookid)
+        return f"借书成功! 用户 '{username}' 借阅了 '{bookname}'（借阅记录ID: {bid}）"
     except Exception as e:
         return f"借书失败: {e}"
+
+
+@register_command("return", help_text="还书 (.return [书id])", aliases=["rt"])
+def cmd_return(args: str) -> str:
+    """还书：调用存储过程 return_book()，触发器自动恢复 BOOK/USER 状态。"""
+    args = args.strip()
+    if not args:
+        return "用法: .return [书id]\n示例: .return 109"
+    if not args.isdigit():
+        return "错误: 书id 必须是整数"
+
+    bookid = int(args)
+
+    try:
+        username, bookname = exampleDB.return_book(bookid)
+        return f"还书成功! 用户 '{username}' 归还了 '{bookname}'"
+    except Exception as e:
+        return f"还书失败: {e}"
+
 
 @register_command("listborrow", help_text="查询用户借阅了哪些书 (.listborrow [用户id])", aliases=["lb"])
 def cmd_listborrow(args: str) -> str:
