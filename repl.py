@@ -147,6 +147,29 @@ def cmd_borrow(args: str) -> str:
     except Exception as e:
         return f"借书失败: {e}"
 
+@register_command("listborrow", help_text="查询用户借阅了哪些书 (.listborrow [用户id])", aliases=["lb"])
+def cmd_listborrow(args: str) -> str:
+    """通过视图 V_USER_BORROW 查询指定用户当前借阅的所有书籍。"""
+    args = args.strip()
+    if not args:
+        return "用法: .listborrow [用户id]\n示例: .listborrow 1"
+    if not args.isdigit():
+        return "错误: 用户id 必须是整数"
+
+    userid = int(args)
+
+    # 直接从视图查询（视图 V_USER_BORROW 已预 JOIN USER、BORROW、BOOK 三表）
+    rows = exampleDB.execSQL(
+        f"SELECT username, bookid, bookname FROM V_USER_BORROW WHERE userid = {userid}"
+    )
+    if not rows:
+        return f"用户 {userid} 当前没有借阅任何书籍"
+
+    username = rows[0][0]
+    lines = [f"用户 '{username}' 当前借阅:"]
+    for row in rows:
+        lines.append(f"  [{row[1]}] {row[2]}")
+    return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
 # 主循环

@@ -43,6 +43,7 @@ def initial():
                 UPDATE USER SET currentborrow = currentborrow + 1 WHERE userid = NEW.userid;
             END;
         """)
+
         #数据插入
         # 插入10个用户
         exampleDB.execSQL("""
@@ -98,8 +99,17 @@ def initial():
                 SELECT COUNT(*) FROM BORROW WHERE BORROW.userid = USER.userid
             );
         """)
-    
+     
         print("数据库初始化成功。")
+
+    # 视图：用户借阅明细（每次启动都确保存在，幂等 CREATE IF NOT EXISTS）
+    exampleDB.execSQL("""
+        CREATE VIEW IF NOT EXISTS V_USER_BORROW AS
+        SELECT BORROW.userid, USER.username, BOOK.bookid, BOOK.bookname
+        FROM BORROW
+        JOIN USER ON BORROW.userid = USER.userid
+        JOIN BOOK ON BORROW.bookid = BOOK.bookid
+    """)
 
 if __name__ == '__main__':
     initial()
