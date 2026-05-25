@@ -102,7 +102,7 @@ def cmd_schema(args: str) -> str:
 
 @register_command("borrow", help_text="借书 (.borrow [用户id] [书id])", aliases=["br"])
 def cmd_borrow(args: str) -> str:
-    """借书：用户借阅一本书。检查用户是否存在、是否已达借书上限、书是否存在、是否已被借出。"""
+    """借书：插入一条 BORROW 记录，触发器自动更新 BOOK/USER 状态。"""
     parts = args.split()
     if len(parts) < 2:
         return "用法: .borrow [用户id] [书id]\n示例: .borrow 1 109"
@@ -116,45 +116,33 @@ def cmd_borrow(args: str) -> str:
     userid = int(userid_str)
     bookid = int(bookid_str)
 
-    # 1. 检查用户是否存在
+    # 1. 获取用户信息（用于友好提示）
     user_check = exampleDB.execSQL(
-        f"SELECT userid, username, currentborrow FROM USER WHERE userid = {userid}"
+        f"SELECT username FROM USER WHERE userid = {userid}"
     )
     if not user_check:
         return f"错误: 用户 {userid} 不存在"
-    username = user_check[0][1]
-    current_borrow = user_check[0][2]
+    username = user_check[0][0]
 
-    # 2. 检查用户借书是否已达上限 (最多5本)
-    if current_borrow >= 5:
-        return f"错误: 用户 '{username}' 已借满 5 本书，无法再借"
-
-    # 3. 检查书是否存在
+    # 2. 获取书籍信息
     book_check = exampleDB.execSQL(
-        f"SELECT bookid, bookname, status FROM BOOK WHERE bookid = {bookid}"
+        f"SELECT bookname FROM BOOK WHERE bookid = {bookid}"
     )
     if not book_check:
         return f"错误: 书籍 {bookid} 不存在"
-    bookname = book_check[0][1]
-    book_status = book_check[0][2]
+    bookname = book_check[0][0]
 
-    # 4. 检查书是否已被借出
-    if book_status == "borrowed":
-        return f"错误: 书籍 '{bookname}' 已被借出，暂时无法借阅"
-
-    # 5. 生成新的 borrowid
+    # 3. 生成新的 borrowid
     max_id = exampleDB.execSQL("SELECT COALESCE(MAX(borrowid), 0) FROM BORROW")
     if not max_id:
         return "错误: 无法查询借阅记录"
     new_borrowid = max_id[0][0] + 1
 
-    # 6. 执行借书操作（事务：插入借阅记录 + 更新书状态 + 更新用户借阅数）
+    # 4. 执行 INSERT（触发器 trg_borrow_insert 自动校验并更新 BOOK/USER）
     try:
-        exampleDB.execSQL_transaction(f"""
-            INSERT INTO BORROW (borrowid, userid, bookid) VALUES ({new_borrowid}, {userid}, {bookid});
-            UPDATE BOOK SET status = 'borrowed' WHERE bookid = {bookid};
-            UPDATE USER SET currentborrow = currentborrow + 1 WHERE userid = {userid};
-        """)
+        exampleDB.execSQL(
+            f"INSERT INTO BORROW (borrowid, userid, bookid) VALUES ({new_borrowid}, {userid}, {bookid})"
+        )
         return f"借书成功! 用户 '{username}' 借阅了 '{bookname}'（借阅记录ID: {new_borrowid}）"
     except Exception as e:
         return f"借书失败: {e}"

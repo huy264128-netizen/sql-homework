@@ -19,13 +19,30 @@ def initial():
         
         exampleDB.execSQL("""
             CREATE TABLE BORROW(
-                          
                 borrowid INT PRIMARY KEY,
                 userid INT NOT NULL,
                 bookid INT NOT NULL,
                 FOREIGN KEY(userid) REFERENCES USER(userid),
                 FOREIGN KEY(bookid) REFERENCES BOOK(bookid)
             )""")
+
+        # 触发器：插入借阅记录时自动更新 BOOK 状态和 USER 借阅数
+        exampleDB.execSQL("""
+            CREATE TRIGGER trg_borrow_insert
+            AFTER INSERT ON BORROW
+            FOR EACH ROW
+            BEGIN
+                -- 检查书籍是否已被借出（是则阻止插入并回滚）
+                SELECT RAISE(ABORT, '书籍已被借出，无法借阅')
+                WHERE (SELECT status FROM BOOK WHERE bookid = NEW.bookid) = 'borrowed';
+
+                -- 更新书籍状态
+                UPDATE BOOK SET status = 'borrowed' WHERE bookid = NEW.bookid;
+
+                -- 更新用户借阅数（CHECK 约束 currentborrow<=5 会在超限时自动阻止）
+                UPDATE USER SET currentborrow = currentborrow + 1 WHERE userid = NEW.userid;
+            END;
+        """)
         #数据插入
         # 插入10个用户
         exampleDB.execSQL("""
