@@ -19,12 +19,69 @@ def initial():
         
         exampleDB.execSQL("""
             CREATE TABLE BORROW(
+                          
                 borrowid INT PRIMARY KEY,
                 userid INT NOT NULL,
                 bookid INT NOT NULL,
                 FOREIGN KEY(userid) REFERENCES USER(userid),
                 FOREIGN KEY(bookid) REFERENCES BOOK(bookid)
             )""")
+        #数据插入
+        # 插入10个用户
+        exampleDB.execSQL("""
+            INSERT INTO USER (userid, username) VALUES
+            (1, 'Alice'),
+            (2, 'Bob'),
+            (3, 'Charlie'),
+            (4, 'Diana'),
+            (5, 'Eve'),
+            (6, 'Frank'),
+            (7, 'Grace'),
+            (8, 'Henry'),
+            (9, 'Ivy'),
+            (10, 'Jack');
+        """)
+
+        # 插入10本书
+        exampleDB.execSQL("""
+            INSERT INTO BOOK (bookid, bookname, status) VALUES
+            (101, 'The Great Gatsby', 'returned'),
+            (102, '1984', 'returned'),
+            (103, 'To Kill a Mockingbird', 'returned'),
+            (104, 'Pride and Prejudice', 'returned'),
+            (105, 'The Catcher in the Rye', 'returned'),
+            (106, 'Moby Dick', 'returned'),
+            (107, 'War and Peace', 'returned'),
+            (108, 'Hamlet', 'returned'),
+            (109, 'The Odyssey', 'returned'),
+            (110, 'Brave New World', 'returned');
+        """)
+
+        # 插入10条借阅记录
+        exampleDB.execSQL("""
+            INSERT INTO BORROW (borrowid, userid, bookid) VALUES
+            (1, 1, 101),
+            (2, 1, 102),
+            (3, 2, 103),
+            (4, 2, 104),
+            (5, 3, 105),
+            (6, 3, 106),
+            (7, 4, 107),
+            (8, 5, 108),
+            (9, 6, 109),
+            (10, 7, 110);
+        """)
+
+        # 同步更新书籍状态与用户当前借阅数
+        exampleDB.execSQL("""
+            UPDATE BOOK SET status = 'borrowed'
+            WHERE bookid IN (SELECT bookid FROM BORROW);
+
+            UPDATE USER SET currentborrow = (
+                SELECT COUNT(*) FROM BORROW WHERE BORROW.userid = USER.userid
+            );
+        """)
+    
         print("数据库初始化成功。")
 
 if __name__ == '__main__':
