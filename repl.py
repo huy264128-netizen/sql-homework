@@ -194,6 +194,20 @@ def cmd_listborrow(args: str) -> str:
         lines.append(f"  [{row[1]}] {row[2]}")
     return "\n".join(lines)
 
+@register_command("rank", help_text="用户借阅排行（按借书数量降序）", aliases=["rk"])
+def cmd_rank(_args: str) -> str:
+    """通过视图 V_BORROW_RANK 查询用户借阅排行。"""
+    rows = exampleDB.execSQL("SELECT * FROM V_BORROW_RANK")
+    if not rows:
+        return "(无用户数据)"
+    lines = ["用户借阅排行（按借书数量降序）:"]
+    lines.append(f"  {'排名':<6}{'用户名':<16}{'借书数':<8}")
+    lines.append(f"  {'-'*30}")
+    for i, row in enumerate(rows, 1):
+        lines.append(f"  {i:<6}{row[0]:<16}{row[1]:<8}")
+    return "\n".join(lines)
+
+
 @register_command("adduser", help_text="添加新用户 (.adduser [用户名])", aliases=["au"])
 def cmd_adduser(args: str) -> str:
     """添加新用户：调用 accessDB.add_user()。"""
