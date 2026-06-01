@@ -33,9 +33,9 @@
 
 | 编号 | 测试项 | 操作 | 预期行为 | 结果 |
 |------|--------|------|----------|------|
-| 1.1 | PRIMARY KEY 唯一性 | `INSERT INTO USER (userid=1, username='Duplicate')` — userid=1 已存在 | 抛出 `IntegrityError` | ✅ |
-| 1.2 | UNIQUE — username | `INSERT INTO USER (userid=4, username='Alice')` — username 重复 | 抛出 `IntegrityError` | ✅ |
-| 1.3 | UNIQUE — bookname | `INSERT INTO BOOK (bookid=201, bookname='SQL 入门')` — 书名重复 | 抛出 `IntegrityError` | ✅ |
+| 1.1 | PRIMARY KEY 唯一性 | `INSERT INTO USER (userid, username) VALUES (1, 'Duplicate')` — userid=1 已存在 | 抛出 `IntegrityError` | ✅ |
+| 1.2 | UNIQUE — username | `INSERT INTO USER (userid, username) VALUES (4, 'Alice')` — username 重复 | 抛出 `IntegrityError` | ✅ |
+| 1.3 | UNIQUE — bookname | `INSERT INTO BOOK (bookid, bookname) VALUES (201, 'SQL 入门')` — 书名重复 | 抛出 `IntegrityError` | ✅ |
 | 1.4 | FOREIGN KEY — userid | `INSERT INTO BORROW (userid=999)` — 用户不存在 | 抛出 `IntegrityError` | ✅ |
 | 1.5 | FOREIGN KEY — bookid | `INSERT INTO BORROW (bookid=999)` — 书籍不存在 | 抛出 `IntegrityError` | ✅ |
 | 1.6 | CHECK — BOOK.status | `INSERT INTO BOOK (status='invalid')` — 非法状态值 | 抛出 `IntegrityError` | ✅ |
