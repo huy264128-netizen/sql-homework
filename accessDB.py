@@ -7,6 +7,7 @@ class accessDB:
         self.dbFile=dbPath
     def execSQL(self, sqlCmd: str) -> list[tuple] | None:
         """执行 SQL 语句。支持多条语句（用 ; 分隔），多语句时返回 None。"""
+        print(f"[SQL] {sqlCmd}")
         result = None
         with sqlite3.connect(self.dbFile) as db:
             db.execute("PRAGMA foreign_keys = ON")
@@ -23,6 +24,7 @@ class accessDB:
 
     def execSQL_transaction(self, sqlCmd: str) -> None:
         """在事务中执行多条 SQL 语句（用 ; 分隔），失败自动回滚。"""
+        print(f"[SQL] {sqlCmd}")
         with sqlite3.connect(self.dbFile) as db:
             db.execute("PRAGMA foreign_keys = ON")
             cursor = db.cursor()
@@ -125,5 +127,83 @@ class accessDB:
         # 4. 删除借阅记录（触发器自动恢复 BOOK/USER）
         self.execSQL(f"DELETE FROM BORROW WHERE bookid = {bookid}")
         return (username, bookname)
+
+    def add_user(self, username: str) -> int:
+        """
+        添加新用户存储过程。
+
+        自动分配 userid（= 当前最大 userid + 1），
+        currentborrow 默认为 0。
+
+        返回: userid
+        异常: ValueError - 用户名已存在；sqlite3.Error - 数据库异常
+        """
+        # 1. 检查用户名是否已存在
+        existing = self.execSQL(
+            f"SELECT userid FROM USER WHERE username = '{username}'"
+        )
+        if existing:
+            raise ValueError(f"用户名 '{username}' 已存在")
+
+        # 2. 生成 userid
+        max_id = self.execSQL("SELECT COALESCE(MAX(userid), 0) FROM USER")
+        if not max_id:
+            raise RuntimeError("查询 userid 失败")
+        new_id = max_id[0][0] + 1
+
+        # 3. 插入新用户
+        self.execSQL(
+            f"INSERT INTO USER (userid, username, currentborrow) "
+            f"VALUES ({new_id}, '{username}', 0)"
+        )
+        return new_id
+
+    def add_book(self, bookname: str) -> int:
+        """
+        添加新书籍存储过程。
+
+        自动分配 bookid（= 当前最大 bookid + 1），
+        status 默认为 'returned'。
+
+        返回: bookid
+        异常: ValueError - 书名已存在；sqlite3.Error - 数据库异常
+        """
+        # 1. 检查书名是否已存在
+        existing = self.execSQL(
+            f"SELECT bookid FROM BOOK WHERE bookname = '{bookname}'"
+        )
+        if existing:
+            raise ValueError(f"书名 '{bookname}' 已存在")
+
+        # 2. 生成 bookid
+        max_id = self.execSQL("SELECT COALESCE(MAX(bookid), 0) FROM BOOK")
+        if not max_id:
+            raise RuntimeError("查询 bookid 失败")
+        new_id = max_id[0][0] + 1
+
+        # 3. 插入新书籍
+        self.execSQL(
+            f"INSERT INTO BOOK (bookid, bookname, status) "
+            f"VALUES ({new_id}, '{bookname}', 'returned')"
+        )
+        return new_id
+
+    def get_user_id(self, username: str) -> int:
+        """根据用户名查找 userid，找不到抛出 ValueError。"""
+        row = self.execSQL(
+            f"SELECT userid FROM USER WHERE username = '{username}'"
+        )
+        if not row:
+            raise ValueError(f"用户 '{username}' 不存在")
+        return row[0][0]
+
+    def get_book_id(self, bookname: str) -> int:
+        """根据书名查找 bookid，找不到抛出 ValueError。"""
+        row = self.execSQL(
+            f"SELECT bookid FROM BOOK WHERE bookname = '{bookname}'"
+        )
+        if not row:
+            raise ValueError(f"书籍 '{bookname}' 不存在")
+        return row[0][0]
 
 exampleDB = accessDB(dbPath)

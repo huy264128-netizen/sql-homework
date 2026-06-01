@@ -14,8 +14,23 @@
         ...
 """
 
+import shlex
+
 import init_database
 from accessDB import exampleDB
+
+
+def _parse_quoted_args(args: str) -> list[str]:
+    """
+    解析命令行参数，支持用引号包裹含空格的参数。
+    例如: Alice 'The Great Gatsby' → ['Alice', 'The Great Gatsby']
+    """
+    try:
+        return shlex.split(args)
+    except ValueError:
+        # shlex 解析失败时退化为简单 split
+        return args.split()
+
 
 # ---------------------------------------------------------------------------
 # 命令注册表
@@ -100,20 +115,27 @@ def cmd_schema(args: str) -> str:
         return "(无匹配)"
     return "\n".join(row[0] for row in rows if row[0])
 
-@register_command("borrow", help_text="借书 (.borrow [用户id] [书id])", aliases=["br"])
+@register_command("borrow", help_text="借书 (.borrow [用户id/用户名] [书id/书名])", aliases=["br"])
 def cmd_borrow(args: str) -> str:
-    """借书：调用存储过程 borrow_book()，触发器自动更新 BOOK/USER 状态。"""
-    parts = args.split()
+    """借书：支持 ID（整数）和名称（字符串）。调用 borrow_book()。"""
+    # 按空格拆分为两个参数，但允许书名/用户名含空格（用引号包裹）
+    parts = _parse_quoted_args(args)
     if len(parts) < 2:
-        return "用法: .borrow [用户id] [书id]\n示例: .borrow 1 109"
+        return "用法: .borrow [用户id/用户名] [书id/书名]\n示例: .borrow 1 109\n示例: .borrow Alice 'The Great Gatsby'"
 
-    userid_str, bookid_str = parts[0], parts[1]
+    user_input, book_input = parts[0], parts[1]
 
-    if not userid_str.isdigit() or not bookid_str.isdigit():
-        return "错误: 用户id 和 书id 必须是整数"
+    # 解析用户：整数→userid，否则→按用户名查找
+    if user_input.isdigit():
+        userid = int(user_input)
+    else:
+        userid = exampleDB.get_user_id(user_input)
 
-    userid = int(userid_str)
-    bookid = int(bookid_str)
+    # 解析书籍：整数→bookid，否则→按书名查找
+    if book_input.isdigit():
+        bookid = int(book_input)
+    else:
+        bookid = exampleDB.get_book_id(book_input)
 
     try:
         bid, username, bookname = exampleDB.borrow_book(userid, bookid)
@@ -122,16 +144,22 @@ def cmd_borrow(args: str) -> str:
         return f"借书失败: {e}"
 
 
-@register_command("return", help_text="还书 (.return [书id])", aliases=["rt"])
+@register_command("return", help_text="还书 (.return [书id/书名])", aliases=["rt"])
 def cmd_return(args: str) -> str:
-    """还书：调用存储过程 return_book()，触发器自动恢复 BOOK/USER 状态。"""
+    """还书：支持 ID（整数）和书名（字符串）。调用 return_book()。"""
     args = args.strip()
     if not args:
-        return "用法: .return [书id]\n示例: .return 109"
-    if not args.isdigit():
-        return "错误: 书id 必须是整数"
+        return "用法: .return [书id/书名]\n示例: .return 109\n示例: .return 'The Great Gatsby'"
 
-    bookid = int(args)
+    # 先用 _parse_quoted_args 解析（支持引号包裹的书名），取第一个参数
+    parts = _parse_quoted_args(args)
+    book_input = parts[0]
+
+    # 解析书籍：整数→bookid，否则→按书名查找
+    if book_input.isdigit():
+        bookid = int(book_input)
+    else:
+        bookid = exampleDB.get_book_id(book_input)
 
     try:
         username, bookname = exampleDB.return_book(bookid)
@@ -140,16 +168,18 @@ def cmd_return(args: str) -> str:
         return f"还书失败: {e}"
 
 
-@register_command("listborrow", help_text="查询用户借阅了哪些书 (.listborrow [用户id])", aliases=["lb"])
+@register_command("listborrow", help_text="查询用户借阅了哪些书 (.listborrow [用户id/用户名])", aliases=["lb"])
 def cmd_listborrow(args: str) -> str:
-    """通过视图 V_USER_BORROW 查询指定用户当前借阅的所有书籍。"""
+    """通过视图 V_USER_BORROW 查询指定用户当前借阅的所有书籍。支持 ID 和用户名。"""
     args = args.strip()
     if not args:
-        return "用法: .listborrow [用户id]\n示例: .listborrow 1"
-    if not args.isdigit():
-        return "错误: 用户id 必须是整数"
+        return "用法: .listborrow [用户id/用户名]\n示例: .listborrow 1\n示例: .listborrow Alice"
 
-    userid = int(args)
+    # 解析用户：整数→userid，否则→按用户名查找
+    if args.isdigit():
+        userid = int(args)
+    else:
+        userid = exampleDB.get_user_id(args)
 
     # 直接从视图查询（视图 V_USER_BORROW 已预 JOIN USER、BORROW、BOOK 三表）
     rows = exampleDB.execSQL(
@@ -163,6 +193,32 @@ def cmd_listborrow(args: str) -> str:
     for row in rows:
         lines.append(f"  [{row[1]}] {row[2]}")
     return "\n".join(lines)
+
+@register_command("adduser", help_text="添加新用户 (.adduser [用户名])", aliases=["au"])
+def cmd_adduser(args: str) -> str:
+    """添加新用户：调用 accessDB.add_user()。"""
+    args = args.strip()
+    if not args:
+        return "用法: .adduser [用户名]\n示例: .adduser 张三"
+    try:
+        new_id = exampleDB.add_user(args)
+        return f"用户添加成功! userid={new_id}, username='{args}'"
+    except Exception as e:
+        return f"添加用户失败: {e}"
+
+
+@register_command("addbook", help_text="添加新书籍 (.addbook [书名])", aliases=["ab"])
+def cmd_addbook(args: str) -> str:
+    """添加新书籍：调用 accessDB.add_book()。"""
+    args = args.strip()
+    if not args:
+        return "用法: .addbook [书名]\n示例: .addbook 三体"
+    try:
+        new_id = exampleDB.add_book(args)
+        return f"书籍添加成功! bookid={new_id}, bookname='{args}'"
+    except Exception as e:
+        return f"添加书籍失败: {e}"
+
 
 # ---------------------------------------------------------------------------
 # 主循环
