@@ -1,7 +1,7 @@
 # 图书管理系统 — 自动化测试报告
 
 > **测试程序**: `test_automated.py`  
-> **测试日期**: 2026-06-01  
+> **测试日期**: 2026-06-08
 > **测试结果**: ✅ **40/40 全部通过**
 
 ---
@@ -36,11 +36,11 @@
 | 1.1 | PRIMARY KEY 唯一性 | `INSERT INTO USER (userid, username) VALUES (1, 'Duplicate')` — userid=1 已存在 | 抛出 `IntegrityError` | ✅ |
 | 1.2 | UNIQUE — username | `INSERT INTO USER (userid, username) VALUES (4, 'Alice')` — username 重复 | 抛出 `IntegrityError` | ✅ |
 | 1.3 | UNIQUE — bookname | `INSERT INTO BOOK (bookid, bookname) VALUES (201, 'SQL 入门')` — 书名重复 | 抛出 `IntegrityError` | ✅ |
-| 1.4 | FOREIGN KEY — userid | `INSERT INTO BORROW (userid=999)` — 用户不存在 | 抛出 `IntegrityError` | ✅ |
-| 1.5 | FOREIGN KEY — bookid | `INSERT INTO BORROW (bookid=999)` — 书籍不存在 | 抛出 `IntegrityError` | ✅ |
-| 1.6 | CHECK — BOOK.status | `INSERT INTO BOOK (status='invalid')` — 非法状态值 | 抛出 `IntegrityError` | ✅ |
-| 1.7 | CHECK — 借阅上限 | `UPDATE USER SET currentborrow=6` — 超出上限 5 | 抛出 `IntegrityError` | ✅ |
-| 1.8 | CHECK — 负数 | `UPDATE USER SET currentborrow=-1` — 负数 | 抛出 `IntegrityError` | ✅ |
+| 1.4 | FOREIGN KEY — userid | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 999, 101)` — 用户不存在 | 抛出 `IntegrityError` | ✅ |
+| 1.5 | FOREIGN KEY — bookid | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 999)` — 书籍不存在 | 抛出 `IntegrityError` | ✅ |
+| 1.6 | CHECK — BOOK.status | `INSERT INTO BOOK (bookid, bookname, status) VALUES (201, 'Test', 'invalid')` — 非法状态值 | 抛出 `IntegrityError` | ✅ |
+| 1.7 | CHECK — 借阅上限 | `UPDATE USER SET currentborrow = 6 WHERE userid = 1` — 超出上限 5 | 抛出 `IntegrityError` | ✅ |
+| 1.8 | CHECK — 负数 | `UPDATE USER SET currentborrow = -1 WHERE userid = 1` — 负数 | 抛出 `IntegrityError` | ✅ |
 | 1.9 | 正常插入 | 合法数据 INSERT | 数据正确写入，可查询到 | ✅ |
 
 ---
@@ -56,8 +56,8 @@
 
 | 编号 | 测试项 | 操作 | 预期行为 | 结果 |
 |------|--------|------|----------|------|
-| 2.1 | 正常借书 | `INSERT INTO BORROW (1, 1, 101)` | `BOOK.status='borrowed'`，`USER.currentborrow=1` | ✅ |
-| 2.2 | 重复借同一本书 | 再 `INSERT INTO BORROW (2, 2, 101)` | RAISE ABORT，抛出异常 `"书籍已被借出，无法借阅"` | ✅ |
+| 2.1 | 正常借书 | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101)` | `BOOK.status='borrowed'`，`USER.currentborrow=1` | ✅ |
+| 2.2 | 重复借同一本书 | 再 `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (2, 2, 101)` | RAISE ABORT，抛出异常 `"书籍已被借出，无法借阅"` | ✅ |
 | 2.3 | 多用户借不同书 | 用户1借101，用户2借102，用户3借103 | 各自 `currentborrow` 分别为 1，互不干扰 | ✅ |
 | 2.4 | 同一用户借多书 | 用户1借101、102 | `currentborrow=2`，2本书 `status='borrowed'` | ✅ |
 | 2.5 | 借书达上限 | 用户已借5本（达到 CHECK 上限），再借第6本 | 被 CHECK 约束或触发器阻止 | ✅ |
@@ -108,7 +108,7 @@
 | 4.7 | add_user 用户重复 | `db.add_user('Alice')` | 抛出 `ValueError` | ✅ |
 | 4.8 | add_book 正常 | `db.add_book('新书推荐')` | 返回新 bookid=104，表中可查到 | ✅ |
 | 4.9 | add_book 书名重复 | `db.add_book('SQL 入门')` | 抛出 `ValueError` | ✅ |
-| 4.10 | 事务原子性 | 先手动插入借阅使101被借，然后 `db.borrow_book(2, 102)` 预期失败 | Bob 的 `currentborrow` 保持为0，未被污染（ROLLBACK 生效） | ✅ |
+| 4.10 | 事务原子性 | 先手动插入借阅使102被借（`INSERT INTO BORROW VALUES (10, 1, 102)`），然后 `db.borrow_book(2, 102)` 预期失败 | Bob 的 `currentborrow` 保持为0，未被污染（ROLLBACK 生效） | ✅ |
 
 ---
 
