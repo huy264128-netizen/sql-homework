@@ -27,7 +27,7 @@ if sys.platform == 'win32':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 复用 init_database 中的 SQL 定义，避免重复维护
-from init_database import SCHEMA_SQL, SMALL_SEED_SQL, SEED_SQL, VIEWS_SQL
+from init_database import SCHEMA_SQL, SMALL_SEED_SQL, SEED_SQL, VIEWS_SQL, init_to_db
 
 # ============================================================================
 # 测试框架
@@ -266,22 +266,16 @@ def test_trigger_delete():
 def test_stored_procedures():
     section("第四部分：应用层存储过程（事务原子性）")
 
-    # 创建文件数据库供 accessDB 使用
+    # 创建文件数据库供 accessDB 使用（通过 init_to_db 走完整的初始化路径）
     DB_FILE = Path("./_test_sp.db")
     if DB_FILE.exists():
         DB_FILE.unlink()
-
-    conn = sqlite3.connect(str(DB_FILE))
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.executescript(SCHEMA_SQL)
-    conn.executescript(SMALL_SEED_SQL)
-    conn.commit()
-    conn.close()
 
     import accessDB
     original_path = accessDB.dbPath
     accessDB.dbPath = DB_FILE
     db = accessDB.accessDB(DB_FILE)
+    init_to_db(db, SMALL_SEED_SQL)
 
     # 4.1 borrow_book — 正常借书
     bid, username, bookname = db.borrow_book(1, 101)
@@ -438,14 +432,6 @@ def test_repl_commands():
     if DB_FILE.exists():
         DB_FILE.unlink()
 
-    conn = sqlite3.connect(str(DB_FILE))
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.executescript(SCHEMA_SQL)
-    conn.executescript(VIEWS_SQL)
-    conn.executescript(SMALL_SEED_SQL)
-    conn.commit()
-    conn.close()
-
     import accessDB
     original_path = accessDB.dbPath
     accessDB.dbPath = DB_FILE
@@ -453,6 +439,7 @@ def test_repl_commands():
     # 替换 repl 模块中的 exampleDB，使其指向测试数据库
     import repl
     repl.exampleDB = accessDB.accessDB(DB_FILE)
+    init_to_db(repl.exampleDB, SMALL_SEED_SQL)
 
     from repl import _command_registry
 

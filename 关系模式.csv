@@ -1,0 +1,10 @@
+表名,属性,类型,约束,说明
+BOOK,bookid,INT,PRIMARY KEY,图书编号
+BOOK,bookname,TEXT,UNIQUE NOT NULL,书名（不可重复）
+BOOK,status,TEXT,"CHECK(status IN ('borrowed', 'returned')) DEFAULT 'returned'",借阅状态
+USER,userid,INT,PRIMARY KEY,用户编号
+USER,username,TEXT,UNIQUE NOT NULL,用户名（不可重复）
+USER,currentborrow,INT,"DEFAULT 0 CHECK(currentborrow >= 0 AND currentborrow <= 5)",当前借书数量（上限5本）
+BORROW,borrowid,INT,PRIMARY KEY,借阅记录编号
+BORROW,userid,INT,NOT NULL FOREIGN KEY REFERENCES USER(userid),借阅用户编号
+BORROW,bookid,INT,NOT NULL FOREIGN KEY REFERENCES BOOK(bookid),借阅图书编号
