@@ -81,17 +81,6 @@ SEED_SQL = """
         (109, 'The Odyssey', 'returned'),
         (110, 'Brave New World', 'returned');
 
-    INSERT INTO BORROW (borrowid, userid, bookid) VALUES
-        (1, 1, 101),
-        (2, 1, 102),
-        (3, 2, 103),
-        (4, 2, 104),
-        (5, 3, 105),
-        (6, 3, 106),
-        (7, 4, 107),
-        (8, 5, 108),
-        (9, 6, 109),
-        (10, 7, 110);
 """
 
 VIEWS_SQL = """
@@ -124,7 +113,8 @@ def initial(db_path: Path | None = None):
         init_to_db(db)
     else:
         # 数据库已存在，仅确保视图存在
-        exampleDB.execSQL(VIEWS_SQL)
+        db = accessDB(target)
+        db.execSQL(VIEWS_SQL)
 
 
 if __name__ == '__main__':
