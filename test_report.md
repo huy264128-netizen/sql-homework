@@ -41,7 +41,7 @@
 | 1.6 | CHECK — BOOK.status | `INSERT INTO BOOK (bookid, bookname, status) VALUES (201, 'Test', 'invalid')` — 非法状态值 | 抛出 `IntegrityError` | ✅ |
 | 1.7 | CHECK — 借阅上限 | `UPDATE USER SET currentborrow = 6 WHERE userid = 1` — 超出上限 5 | 抛出 `IntegrityError` | ✅ |
 | 1.8 | CHECK — 负数 | `UPDATE USER SET currentborrow = -1 WHERE userid = 1` — 负数 | 抛出 `IntegrityError` | ✅ |
-| 1.9 | 正常插入 | 合法数据 INSERT | 数据正确写入，可查询到 | ✅ |
+| 1.9 | 正常插入 | `INSERT INTO USER (userid, username) VALUES (4, 'Diana');`<br>`INSERT INTO BOOK (bookid, bookname) VALUES (201, '新书');`<br>`SELECT username FROM USER WHERE userid=4;`<br>`SELECT bookname FROM BOOK WHERE bookid=201;` | 数据正确写入，分别返回 `'Diana'` 和 `'新书'` | ✅ |
 
 ---
 
@@ -58,9 +58,9 @@
 |------|--------|------|----------|------|
 | 2.1 | 正常借书 | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101)` | `BOOK.status='borrowed'`，`USER.currentborrow=1` | ✅ |
 | 2.2 | 重复借同一本书 | 再 `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (2, 2, 101)` | RAISE ABORT，抛出异常 `"书籍已被借出，无法借阅"` | ✅ |
-| 2.3 | 多用户借不同书 | 用户1借101，用户2借102，用户3借103 | 各自 `currentborrow` 分别为 1，互不干扰 | ✅ |
-| 2.4 | 同一用户借多书 | 用户1借101、102 | `currentborrow=2`，2本书 `status='borrowed'` | ✅ |
-| 2.5 | 借书达上限 | 用户已借5本（达到 CHECK 上限），再借第6本 | 被 CHECK 约束或触发器阻止 | ✅ |
+| 2.3 | 多用户借不同书 | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101);`<br>`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (2, 2, 102);`<br>`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (3, 3, 103);` | 各自 `currentborrow` 分别为 1，互不干扰 | ✅ |
+| 2.4 | 同一用户借多书 | `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101);`<br>`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (2, 1, 102);` | `currentborrow=2`，2本书 `status='borrowed'` | ✅ |
+| 2.5 | 借书达上限 | 先插入5条借阅：<br>`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1,1,101),(2,1,102),(3,1,103),(4,1,104),(5,1,105);`<br>再尝试 `INSERT INTO BORROW (borrowid, userid, bookid) VALUES (6, 1, 106);` | 第6本被 CHECK 约束或触发器阻止 | ✅ |
 
 ---
 
@@ -75,9 +75,9 @@
 
 | 编号 | 测试项 | 操作 | 预期行为 | 结果 |
 |------|--------|------|----------|------|
-| 3.1 | 正常还书 | Alice 借了101和102，`DELETE FROM BORROW WHERE bookid=101` | `BOOK.status='returned'`，`currentborrow` 从2降为1 | ✅ |
-| 3.2 | 还清所有书 | 再 `DELETE WHERE bookid=102` | `currentborrow=0` | ✅ |
-| 3.3 | 还另一用户的书 | `DELETE WHERE bookid=103`（Bob 借的） | Bob 的 `currentborrow` 归0 | ✅ |
+| 3.1 | 正常还书 | 前置：`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101), (2, 1, 102), (3, 2, 103);`<br>`DELETE FROM BORROW WHERE bookid=101` | `BOOK.status='returned'`，Alice 的 `currentborrow` 从2降为1 | ✅ |
+| 3.2 | 还清所有书 | 再 `DELETE FROM BORROW WHERE bookid=102` | Alice 的 `currentborrow=0` | ✅ |
+| 3.3 | 还另一用户的书 | `DELETE FROM BORROW WHERE bookid=103`（Bob 借的） | Bob 的 `currentborrow` 归0 | ✅ |
 
 ---
 
@@ -122,9 +122,9 @@
 
 | 编号 | 测试项 | 操作 | 预期行为 | 结果 |
 |------|--------|------|----------|------|
-| 5.1 | V_USER_BORROW | Alice 借了101、102，查询视图 | 返回 2 条记录，JOIN 出 username 和 bookname | ✅ |
-| 5.2 | V_BORROW_RANK | 插入3条借阅后查询 | Alice(2本) 排第一，Bob(1本) 第二，Charlie(0本) 第三 | ✅ |
-| 5.3 | 视图实时更新 | `DELETE FROM BORROW WHERE bookid=102` | V_BORROW_RANK 中 Alice 从2降为1 | ✅ |
+| 5.1 | V_USER_BORROW | 前置：`INSERT INTO BORROW (borrowid, userid, bookid) VALUES (1, 1, 101), (2, 1, 102), (3, 2, 103);`<br>`SELECT username, bookid, bookname FROM V_USER_BORROW WHERE userid=1;` | 返回 2 条记录，JOIN 出 username 和 bookname | ✅ |
+| 5.2 | V_BORROW_RANK | 前置（同上 insert），查询 `SELECT * FROM V_BORROW_RANK;` | Alice(2本) 排第一，Bob(1本) 第二，Charlie(0本) 第三 | ✅ |
+| 5.3 | 视图实时更新 | `DELETE FROM BORROW WHERE bookid=102;`<br>`SELECT * FROM V_BORROW_RANK WHERE username='Alice';` | V_BORROW_RANK 中 Alice 从2降为1 | ✅ |
 
 ---
 
@@ -160,7 +160,7 @@
 |------|------|
 | `SCHEMA_SQL` | CREATE TABLE + TRIGGER（不含数据） |
 | `SMALL_SEED_SQL` | 3用户 3书籍（轻量测试用） |
-| `SEED_SQL` | 10用户 10书籍 10借阅（完整生产数据） |
+| `SEED_SQL` | 10用户 10书籍（完整生产数据） |
 | `VIEWS_SQL` | CREATE VIEW 语句 |
 
 新增 `init_to_db(db, seed)` 函数，接受任意 `accessDB` 实例和种子数据，测试代码可直接调用。
