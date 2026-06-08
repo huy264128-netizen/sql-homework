@@ -23,23 +23,25 @@ class accessDB:
         return result
 
     def execSQL_transaction(self, sqlCmd: str) -> None:
-        """在事务中执行多条 SQL 语句（用 ; 分隔），失败自动回滚。"""
+        """在事务中执行多条 SQL 语句，失败自动回滚。
+
+        使用 executescript 而非 split(";") 逐条执行，避免触发器/存储过程
+        体内的 ; 被错误拆分（如 CREATE TRIGGER ... BEGIN ... END;）。
+        """
         print(f"[SQL] {sqlCmd}")
         with sqlite3.connect(self.dbFile) as db:
             db.execute("PRAGMA foreign_keys = ON")
-            cursor = db.cursor()
+            # 用 SQL 级别的 BEGIN/COMMIT 包裹，确保原子性
+            full_sql = "BEGIN;\n" + sqlCmd + "\nCOMMIT;"
             try:
-                cursor.execute("BEGIN")
-                for stmt in sqlCmd.split(";"):
-                    stmt = stmt.strip()
-                    if stmt:
-                        cursor.execute(stmt)
-                cursor.execute("COMMIT")
+                db.executescript(full_sql)
             except Exception:
-                cursor.execute("ROLLBACK")
+                # 异常时显式 ROLLBACK，防止残留未关闭的事务
+                try:
+                    db.executescript("ROLLBACK;")
+                except Exception:
+                    pass
                 raise
-            finally:
-                cursor.close()
 
     # -----------------------------------------------------------------------
     # 应用层存储过程（单事务保证原子性）
